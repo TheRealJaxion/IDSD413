@@ -1,0 +1,27 @@
+#+title: Análisis de Transacciones Fraudulentas y Legítimas
+#+subtitle: Fundamentos de Big Data (IDSD413) - Proyecto 1
+#+author: Jordy Cartagena
+#+institute: Facultad de Ingeniería de Sistemas \\ Escuela Politécnica Nacional (EPN)
+#+date: \today
+#+language: es
+
+#+startup: beamer
+#+latex_class: beamer
+#+latex_class_options: [aspectratio=169, 11pt]
+#+options: H:2 toc:nil num:t ^:{}
+#+columns: %45ITEM %10BEAMER_env(Env) %10BEAMER_act(Act) %4BEAMER_col(Col) %8BEAMER_opt(Opt)
+
+#+beamer_theme: Madrid
+#+beamer_color_theme: whale
+#+beamer_font_theme: professionalfonts
+
+#+latex_header: \usepackage[T1]{fontenc}
+#+latex_header: \usepackage[utf8]{inputenc}
+#+latex_header: \usepackage[spanish]{babel}
+#+latex_header: \usepackage{booktabs}
+#+latex_header: \usepackage{listings}
+#+latex_header: \usepackage{xcolor}
+#+latex_header: \setbeamertemplate{navigation symbols}{}
+#+latex_header: \titlegraphic{\includegraphics[height=1.2cm]{../../../Images/logoepn.jpg}}
+
+
