@@ -1,0 +1,192 @@
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[top=25mm, bottom=25mm, left=25mm, right=25mm]{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{fancyhdr}
+\usepackage{indentfirst}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{csquotes}
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{codebg}{rgb}{0.96, 0.96, 0.97}
+\lstset{backgroundcolor=\color{codebg}, basicstyle=\ttfamily\small, breaklines=true, frame=single, framerule=0pt, keepspaces=true}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Fundamentos de Big Data (IDSD413)}
+\fancyhead[R]{\small EPN-FIS}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\author{Jordy Cartagena}
+\date{\today}
+\title{Manual Técnico de Infraestructura, Arquitectura y Reproducibilidad\\\medskip
+\large Proyecto 1: Detección y Análisis Estadístico de Fraude en Transacciones Financieras}
+\hypersetup{
+ pdfauthor={Jordy Cartagena},
+ pdftitle={Manual Técnico de Infraestructura, Arquitectura y Reproducibilidad},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 29.3 (Org mode 9.6.15)}, 
+ pdflang={Spanish}}
+\usepackage[style=apa]{biblatex}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{Propósito del Manual y Alcance Técnico}
+\label{sec:org6eb6cd2}
+
+Este documento constituye la guía operativa y metodológica del proyecto de analítica financiera sobre detección de fraude en tarjetas de crédito. Su objetivo es detallar la configuración de la infraestructura computacional, la arquitectura modular de datos, el flujo de procesamiento ETL (\textbf{Extracción, Transformación y Carga}) y los procedimientos de verificación necesarios para garantizar la reproducibilidad determinista de todos los resultados estadísticos y visuales generados en los cuadernos técnicos.
+
+\section{Infraestructura Computacional y Stack Tecnológico}
+\label{sec:org49875e9}
+
+El ecosistema de procesamiento fue desplegado sobre un entorno Linux virtualizado (Ubuntu en WSL2), aislado mediante gestores de entornos reproducibles (Mamba/Conda, entorno \texttt{IDSD413}) y ejecutado de forma interactiva en JupyterLab.
+
+\begin{table}[H]
+\caption{\label{tab:org3581e97}Componentes del stack tecnológico y arquitectura computacional}
+\centering
+\begin{tabular}{p{0.24\textwidth} p{0.24\textwidth} p{0.46\textwidth}}
+\toprule
+Componente & Rol en el Sistema & Descripción Técnica\\[0pt]
+\midrule
+Ubuntu (WSL2) & Sistema operativo base & Proporciona compatibilidad nativa con herramientas POSIX, gestión eficiente de memoria y portabilidad hacia servidores Linux de producción.\\[0pt]
+Mamba / Conda (\texttt{IDSD413}) & Aislamiento de dependencias & Resuelve determinísticamente las versiones de paquetes científicos y evita conflictos entre binarios compilados en C/C++.\\[0pt]
+JupyterLab & Desarrollo interactivo & Permite integrar código ejecutable, ecuaciones matemáticas, tablas dinámicas y visualizaciones incrustadas en un libro técnico auditable.\\[0pt]
+Pandas \& NumPy & Manipulación matricial & Ejecutan operaciones columnares, agregaciones estratificadas y álgebra lineal sobre arreglos contiguos en memoria RAM.\\[0pt]
+PyArrow \& Apache Parquet & Motor y formato columnar & Almacena conjuntos en formato binario orientado por columnas, preservando esquemas (\texttt{float32}, \texttt{int8}), aplicando compresión y lectura \textbf{zero-copy}.\\[0pt]
+SciPy (\texttt{scipy.stats}) & Inferencia estadística & Provee implementaciones numéricas de alta precisión para IC \$t\$-Student, contraste \(t\) de Welch, prueba \(U\) de Mann-Whitney, Pearson y \(\chi^2\).\\[0pt]
+Scikit-Learn & Preprocesamiento robusto & Implementa el escalado centrado en mediana y rango intercuartílico (\texttt{RobustScaler}), insensible a valores atípicos extremos.\\[0pt]
+Matplotlib \& Seaborn & Visualización estadística & Generan figuras de alta resolución (120 dpi) con mapeo logarítmico, curvas KDE y mapas de calor exportados automáticamente.\\[0pt]
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Arquitectura de Directorios del Proyecto}
+\label{sec:orgd8bc8d5}
+
+El proyecto sigue una estructura estandarizada que desacopla los datos inmutables de origen, los artefactos procesados, el código analítico y las salidas gráficas:
+
+\begin{verbatim}
+Analisis_Financiero/
+|-- data/
+|   |-- raw/
+|   |   `-- data-card-detection.zip           # Fuente original inmutable (284,807 registros)
+|   `-- processed/
+|       |-- transactions_cleaned.parquet      # Dataset depurado sin duplicados (283,726 registros)
+|       |-- transactions_cleaned.csv.gz       # Respaldo depurado comprimido en Gzip
+|       `-- transactions_features.parquet     # Dataset final con ingeniería de características
+|-- docs/                                     # Documentación técnica y rúbricas
+|-- figures/
+|   |-- 02_eda_distribucion_amount_ic.png     # Histogramas logarítmicos e IC 95%
+|   |-- 03_eda_boxplot_welch_amount.png       # Boxplots por clase y contraste de Welch
+|   |-- 04_eda_correlacion_pca_class.png      # Ranking de componentes PCA y Heatmap
+|   |-- 05_eda_temporal_chi2.png              # Densidad circadiana 24h e incidencia por franja
+|   `-- 06_transformacion_features.png        # Comparativa de escalado y proyección cíclica
+|-- notebooks/
+|   |-- 01_inspeccion_eda_transacciones.ipynb # Módulo 1: Ingesta, auditoría y limpieza
+|   `-- 02_eda_y_analisis_transacciones.ipynb # Módulo 2: EDA, inferencia y transformación
+|-- src/                                      # Scripts auxiliares modulares
+|-- environment.yml                           # Definición completa del entorno Conda/Mamba
+|-- requirements.txt                          # Lista congelada de paquetes Python
+`-- README.md                                 # Guía rápida de ejecución
+\end{verbatim}
+
+\section{Especificaciones y Origen del Conjunto de Datos}
+\label{sec:org6045957}
+
+\begin{itemize}
+\item \textbf{Fuente Oficial:} Machine Learning Group -- Université Libre de Bruxelles (ULB), alojado en el repositorio abierto de Kaggle: \url{https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud}.
+\item \textbf{Cobertura Temporal:} Transacciones realizadas con tarjetas de crédito por tarjetahabientes europeos durante un periodo continuo de 48 horas en septiembre de 2013 (\(172\,800\) segundos).
+\item \textbf{Desbalance Estructural:} En el archivo crudo, la clase positiva representa únicamente el \(0.173\%\) (\(492\) fraudes frente a \(284\,315\) legítimas), condición que invalida la exactitud global (\textbf{Accuracy}) y exige métricas sensibles a clases minoritarias como el Área Bajo la Curva Precisión-Recall (AUPRC).
+\end{itemize}
+
+\begin{table}[H]
+\caption{\label{tab:orgdc10f43}Esquema y dimensionalidad original del conjunto de datos (284,807 registros × 31 atributos)}
+\centering
+\begin{tabular}{p{0.18\textwidth} p{0.24\textwidth} p{0.52\textwidth}}
+\toprule
+Atributo & Tipo (Origen \(\to\) Final) & Descripción Técnica\\[0pt]
+\midrule
+\texttt{Time} & \texttt{float64} \(\to\) \texttt{float32} & Segundos transcurridos desde la primera transacción registrada (\(t_0 = 0\)).\\[0pt]
+\texttt{V1} a \texttt{V28} & \texttt{float64} \(\to\) \texttt{float32} & Variables continuas ortogonales (\(\text{Corr}(V_i, V_j) = 0\) para \(i \neq j\)) obtenidas mediante PCA para proteger la confidencialidad bancaria.\\[0pt]
+\texttt{Amount} & \texttt{float64} \(\to\) \texttt{float32} & Valor monetario de cada operación financiera.\\[0pt]
+\texttt{Class} & \texttt{int64} \(\to\) \texttt{int8} & Variable objetivo dicotómica (\texttt{0}: operación legítima; \texttt{1}: operación fraudulenta).\\[0pt]
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Guía de Instalación y Reproducibilidad}
+\label{sec:org894fa98}
+
+\subsection{Configuración del Entorno}
+\label{sec:org761f3c7}
+
+Para replicar exactamente el entorno de ejecución en cualquier estación Linux/WSL2, ejecutar los siguientes comandos en terminal:
+
+\begin{lstlisting}[language=shell,label= ,caption= ,captionpos=b,numbers=none]
+# 1. Ubicarse en el directorio raíz del proyecto
+cd ~/EPN/4to/FBD/Projects/Analisis_Financiero
+
+# 2. Reconstruir el entorno aislado desde el archivo de especificaciones
+mamba env create -f environment.yml
+
+# 3. Activar el entorno de trabajo
+mamba activate IDSD413
+
+# 4. Iniciar el servidor de JupyterLab
+jupyter lab
+\end{lstlisting}
+
+\emph{Nota: En caso de utilizar únicamente \texttt{pip}, ejecutar \texttt{pip install -r requirements.txt} sobre Python 3.12.}
+
+\subsection{Orden Secuencial de Ejecución del Pipeline}
+\label{sec:orgb484ebb}
+
+Los cuadernos están diseñados como un flujo encadenado mediante rutas relativas (\texttt{../data/...} y \texttt{../figures/...}), por lo que deben ejecutarse en orden numérico:
+
+\subsubsection{Módulo 1: \texttt{notebooks/01\_inspeccion\_eda\_transacciones.ipynb} (Extracción y Limpieza)}
+\label{sec:org8d04e05}
+\begin{itemize}
+\item Lee directamente el archivo comprimido \texttt{../data/raw/data-card-detection.zip} sin alterar la fuente original.
+\item Audita tipos de datos, verifica ausencia de valores faltantes (\(0\ \text{NaN}\)) y cuantifica \(1\,081\) registros exactamente duplicados (\(1\,062\) legítimos y \(19\) fraudulentos).
+\item Purga la redundancia conservando la primera ocurrencia (\texttt{keep}'first'=), reduciendo el conjunto a \(283\,726\) transacciones únicas (\(283\,253\) legítimas y \(473\) fraudes; tasa de fraude del \(0.167\%\)).
+\item Aplica \textbf{downcasting} de tipos (\texttt{float32} e \texttt{int8}), disminuyendo la huella en memoria RAM a la mitad, y exporta los resultados a:
+\begin{itemize}
+\item \texttt{../data/processed/transactions\_cleaned.parquet}
+\item \texttt{../data/processed/transactions\_cleaned.csv.gz}
+\end{itemize}
+\end{itemize}
+
+\subsubsection{Módulo 2: \texttt{notebooks/02\_eda\_y\_analisis\_transacciones.ipynb} (Inferencia y Transformación)}
+\label{sec:org997be1b}
+\begin{itemize}
+\item Ingiere el dataset limpio desde \texttt{../data/processed/}.
+\item \textbf{Estadística Descriptiva Base:} Calcula momentos paramétricos, cuantiles no paramétricos (IQR), asimetría y curtosis estratificados por clase.
+\item \textbf{Análisis Inferencial 1:} Estima intervalos de confianza al \(95\%\) (\(\text{IC}\ 95\%\)) mediante distribución \(t\) de Student para la media de \texttt{Amount} y proyecta histogramas en escala \(\ln(1 + x)\) con etiquetas monetarias reales.
+\item \textbf{Análisis Inferencial 2:} Evalúa atípicos bajo la regla de Tukey (\(Q_3 + 1.5 \cdot \text{IQR}\)) y aplica la prueba \(t\) de Welch (\(p = 0.0032\)) junto con Mann-Whitney \(U\) (\(p < 10^{-10}\)) para contrastar diferencias entre clases.
+\item \textbf{Análisis Inferencial 3:} Calcula la correlación punto-biserial de Pearson entre \texttt{V1..V28} y \texttt{Class}, validando significancia (\(p < 10^{-100}\)) y verificando ortogonalidad nula (\(r = 0.00\)) entre predictores.
+\item \textbf{Análisis Inferencial 4:} Proyecta \texttt{Time} sobre el ciclo circadiano de \(24\text{ horas}\) y ejecuta una prueba \(\chi^2\) de Independencia (\(p < 10^{-30}\)), demostrando el incremento de incidencia relativa de fraude en la franja de madrugada (\(00\text{--}06\text{h}\)).
+\item \textbf{Ingeniería de Características y Persistencia:} Genera las variables cíclicas \texttt{Hour\_sin} y \texttt{Hour\_cos}, la compresión logarítmica \texttt{Amount\_log} y las variables estandarizadas mediante \texttt{RobustScaler} (\texttt{Amount\_robust}, \texttt{Time\_robust}), guardando el artefacto final en:
+\begin{itemize}
+\item \texttt{../data/processed/transactions\_features.parquet}
+\end{itemize}
+\end{itemize}
+\end{document}
